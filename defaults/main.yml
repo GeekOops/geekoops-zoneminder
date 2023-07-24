@@ -1,6 +1,6 @@
 ---
 zm_domain: "zm.example.org"
-zm_location: "drupal9-hp"
-zm_db_name: "drupal_hp"
-zm_db_user: "drupal_user"
+zm_db_name: "zm"
+zm_db_user: "zmuser"
 zm_db_pw: lookup('community.general.random_string', min_lower=1, min_upper=1, min_special=1, min_numeric=1, length=12)
+zm_database_initialized: "no"

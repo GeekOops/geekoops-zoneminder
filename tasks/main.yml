@@ -1,0 +1,87 @@
+- name: enable server:php repository
+  community.general.zypper_repository:
+    name: spins:invis:15:common
+    repo: 'https://download.opensuse.org/repositories/spins:/invis:/15:/common/15.4/'
+    state: present
+    runrefresh: true
+    auto_import_keys: yes
+
+- name: Refresh repos and update packages
+  community.general.zypper:
+    name: '*'
+    state: latest
+    update_cache: yes
+
+- name: Install packages
+  ansible.builtin.package:
+    name:
+      - ffmpeg-4
+      - ZoneMinder
+    state: present
+
+#- name: copy config of zm initialization routine
+#  ansible.builtin.template:
+#    src: "zm_database_init.conf.j2"
+#    dest: "/etc/zoneminder/zm_database_init.conf"
+#    owner: root
+#    group: "root"
+#    mode: '0644'
+
+- name: copy config adaptations
+  ansible.builtin.template:
+    src: "99-local.conf.j2"
+    dest: "/etc/zoneminder/conf.d/99-local.conf"
+    owner: root
+    group: "www"
+    mode: '0640'
+
+- name: create ZoneMinder mysql database with hardcoded name zm
+  community.mysql.mysql_db:
+     name: "{{ zm_db_name }}"
+     state: present
+
+- name: Create mysql user for ZoneMinder
+  community.mysql.mysql_user:
+     name: "{{ zm_db_user }}"
+     password: "{{ zm_db_pw }}"
+     state: present
+
+- name: create ZoneMinder database user
+  community.mysql.mysql_user:
+     name: "{{ zm_db_user }}"
+     password: "{{ zm_db_pw }}"
+     state: present
+     priv:
+       '{{ zm_db_name }}.*:ALL'
+
+- name: execute initialization routine for mysql database
+  ansible.builtin.shell: |
+    a2dismod php8
+
+- name: execute initialization routine for mysql database
+  ansible.builtin.shell: |
+    mariadb -u{{ zm_db_user }} -p{{ zm_db_pw }}  < /usr/share/zoneminder/db/zm_create.sql
+
+- name: modify apache config file
+  ansible.builtin.blockinfile:
+    path: "/etc/apache2/vhosts.d/zm.conf"
+    insertbefore: '</VirtualHost>'
+    marker: "# {mark} ANSIBLE MANAGED BLOCK #"
+    block: |
+      ServerName {{ zm_domain }}
+      ServerAlias {{ zm_domain }}
+      ServerAdmin {{ zm_webmaster }}
+
+- name: Ensure apache service is enabled
+  systemd:
+    name: "apache2"
+    state: restarted
+    enabled: true
+
+- name: Ensure zm service is enabled
+  systemd:
+    name: "zm"
+    state: started
+    enabled: true
+  tags: ['zm', 'systemd']
+
