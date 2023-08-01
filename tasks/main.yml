@@ -67,11 +67,41 @@
   ansible.builtin.blockinfile:
     path: "/etc/apache2/vhosts.d/zm.conf"
     insertbefore: '</VirtualHost>'
-    marker: "# {mark} ANSIBLE MANAGED BLOCK #"
+    marker: "# {mark} ANSIBLE MANAGED BLOCK 1 #"
     block: |
       ServerName {{ zm_domain }}
       ServerAlias {{ zm_domain }}
       ServerAdmin {{ zm_webmaster }}
+
+
+
+- name: modify apache config file with some php-fpm config
+  when: zm_php_fpm_pool | length > 0
+  ansible.builtin.blockinfile:
+    path: "/etc/apache2/vhosts.d/zm.conf"
+    insertafter: '<VirtualHost'
+    marker: "# {mark} ANSIBLE MANAGED BLOCK 2 #"
+    block: |
+         <Proxy "fcgi://{{ zm_php_fpm_pool }}/">
+            # we must declare a (any) parameter in here 
+            # or it won't register the proxy ahead of time
+            ProxySet disablereuse=off
+        </Proxy>
+
+
+
+- name: modify apache config file with some php-fpm config
+  when: zm_php_fpm_pool | length > 0
+  ansible.builtin.blockinfile:
+    path: "/etc/apache2/vhosts.d/zm.conf"
+    insertbefore: '</VirtualHost>'
+    marker: "# {mark} ANSIBLE MANAGED BLOCK 3 #"
+    block: |
+      <FilesMatch ".+\.ph(p[34578]?|t|tml)$">
+            SetHandler "proxy:unix:/var/run/php-fpm/{{ zm_php_fpm_pool }}.sock|fcgi://{{ zm_php_fpm_pool }}/"
+      </FilesMatch>
+
+
 
 - name: Ensure apache service is enabled
   systemd:
