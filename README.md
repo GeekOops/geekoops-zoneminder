@@ -37,7 +37,7 @@ An advanced example for the imaginary `jellyfish` test server
              drupal_db_pw: "1234abcd"
 
 ## Stuff to do afterwards
-
+A good resource for checking the fpm configuration is here: https://wiki.gentoo.org/wiki/ZoneMinder
 
 ## License
 

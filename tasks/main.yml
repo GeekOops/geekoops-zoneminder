@@ -54,11 +54,12 @@
      priv:
        '{{ zm_db_name }}.*:ALL'
 
-- name: execute initialization routine for mysql database
+- name: disable use of php cgi
   ansible.builtin.shell: |
     a2dismod php8
 
 - name: execute initialization routine for mysql database
+  when: zm_database_initialized == false
   ansible.builtin.shell: |
     mariadb -u{{ zm_db_user }} -p{{ zm_db_pw }}  < /usr/share/zoneminder/db/zm_create.sql
 
@@ -84,4 +85,16 @@
     state: started
     enabled: true
   tags: ['zm', 'systemd']
+
+- name: Ensure AppArmor lets php-fpm write and lock the zoneminder folder
+  ansible.builtin.lineinfile:
+    path: /etc/apparmor.d/local/php-fpm
+    line: "/usr/share/zoneminder/** rwlk,"
+
+- name: Ensure AppArmor is reloaded
+  systemd:
+    name: apparmor
+    state: restarted
+    enabled: true
+
 
