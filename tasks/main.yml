@@ -121,6 +121,16 @@
     path: /etc/apparmor.d/local/php-fpm
     line: "/usr/share/zoneminder/** rwlk,"
 
+- name: Ensure AppArmor lets php-fpm read the zoneminder config folder
+  ansible.builtin.lineinfile:
+    path: /etc/apparmor.d/local/php-fpm
+    line: "/etc/zoneminder/** r,"
+
+- name: Ensure AppArmor lets php-fpm acces loadavg
+  ansible.builtin.lineinfile:
+    path: /etc/apparmor.d/local/php-fpm
+    line: "/proc/loadavg r,"
+
 - name: Ensure AppArmor is reloaded
   systemd:
     name: apparmor
